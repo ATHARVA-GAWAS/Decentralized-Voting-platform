@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Decentralized Voting</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.3.4/dist/web3.min.js"></script>
+</head>
+<body>
+    <h1>Decentralized Voting</h1>
+    <div id="candidates"></div>
+    <script>
+        // Replace with the ABI generated from your compiled contract
+        const contractABI = [
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "candidatesCount",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [{"name": "", "type": "uint256"}],
+                "name": "candidates",
+                "outputs": [{"name": "id", "type": "uint256"}, {"name": "name", "type": "string"}, {"name": "voteCount", "type": "uint256"}],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [{"name": "_candidateId", "type": "uint256"}],
+                "name": "vote",
+                "outputs": [],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        // Replace 'YOUR_CONTRACT_ADDRESS_HERE' with your actual contract address
+        const contractAddress = '0x55e0547f991647e4e30cb3e4d57023ed803eebe6';
+
+        async function load() {
+            if (window.ethereum) {
+                window.web3 = new Web3(window.ethereum);
+                await ethereum.request({ method: 'eth_requestAccounts' });
+            } else {
+                alert('Please install MetaMask to use this dApp!');
+            }
+
+            const web3 = window.web3;
+            const voting = new web3.eth.Contract(contractABI, contractAddress);
+
+            const candidatesCount = await voting.methods.candidatesCount().call();
+            let candidatesHtml = '';
+
+            for (let i = 1; i <= candidatesCount; i++) {
+                const candidate = await voting.methods.candidates(i).call();
+                candidatesHtml += `<div>
+                    <p>${candidate.name}: ${candidate.voteCount} votes</p>
+                    <button onclick="vote(${candidate.id})">Vote</button>
+                </div>`;
+            }
+
+            document.getElementById('candidates').innerHTML = candidatesHtml;
+        }
+
+        async function vote(candidateId) {
+            const accounts = await web3.eth.getAccounts();
+            const voting = new web3.eth.Contract(contractABI, contractAddress);
+            await voting.methods.vote(candidateId).send({ from: accounts[0] });
+            window.location.reload();
+        }
+
+        load();
+    </script>
+</body>
+</html>
